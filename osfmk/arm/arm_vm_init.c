@@ -122,7 +122,7 @@ extern void *ExceptionVectorsBase;
 
 #define LOWGLO_BASE     0xFFFF0040
 #define VECTORS_BASE    0xFFFF0000
-#define MANAGED_BASE    0xA0000000  /* Can also be 0xA0000000, but iPhone OS 5 uses this address. */
+#define MANAGED_BASE    0xC0000000  /* Can also be 0xA0000000, but iPhone OS 5 uses this address. */
 
 /*
  * These both represent the first physical page we can use in the system,
@@ -349,7 +349,7 @@ void arm_vm_init(uint32_t mem_limit, boot_args * args)
      * Burn it away... 
      */
 #ifdef BOARD_CONFIG_S5L8930X
-    first_avail += 4096 * L1_SIZE; /* temporary..... */
+    first_avail += 8192 * L1_SIZE; /* temporary..... */
 #else
     first_avail += 1 * L1_SIZE; /* temporary..... */
 #endif

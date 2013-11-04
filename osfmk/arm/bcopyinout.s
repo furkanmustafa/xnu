@@ -37,6 +37,7 @@
 
 #include <arm/asm_help.h>
 #include <assym.s>
+#include <mach/arm/asm.h>
 
 #define ENAMETOOLONG    0x3f
 #define SAVE_REGS       stmfd	sp!, {r4-r6}
@@ -44,9 +45,6 @@
 
 .code 32
 .arm
-
-#define RETeq       moveq   pc, lr
-#define RET         mov     pc, lr
 
 /*
  * r0 = user space address
@@ -60,7 +58,7 @@ EnterARM(copyinmsg)
     cmp     r2, #0
     movle   r0, #0
     movle   pc, lr
-    cmp     r1, #0xc0000000
+    cmp     r1, #0xe0000000
     bcs     copyio_kernel
     stmfd   sp!,{r10,r11,lr}
     mov     r3, #0
@@ -479,7 +477,7 @@ EnterARM(copyoutmsg)
     cmp r2, #0
     movle r0, #0
     movle pc, lr
-    cmp   r1, #0xc0000000
+    cmp   r1, #0xe0000000
     bcs copyio_kernel
     stmfd sp!,{r10,r11,lr}
     LoadThreadRegister(r10)
@@ -1024,7 +1022,7 @@ copyio_kernel:
     LoadThreadRegister(r12)
     ldr     r3, [r12, MACHINE_THREAD_CPU_DATA]
     ldr     r3, [r3, CPU_PMAP]
-    LoadConstantToReg(_kernel_pmap, r12)
+    LOAD_ADDR(r12, kernel_pmap)
     ldr     r12, [r12]
     cmp     r3, r12
     bne     copyio_no_perms
@@ -1080,4 +1078,6 @@ _copyinframe_success:
 _copyinframe_error:
 	mov 	r0, #0xE
 	bx 		lr
+
+LOAD_ADDR_GEN_DEF(kernel_pmap)
 

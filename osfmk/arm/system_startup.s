@@ -33,6 +33,7 @@
 #include <arm/arch.h>
 #include <arm/asm_help.h>
 #include <assym.s>
+#include <mach/arm/asm.h>
 
 /*
  * During system initialization, there are two possible methods of
@@ -49,7 +50,7 @@
 
 EnterARM(_start)
     /* First, disable interrupts so that the BL doesn't get any. */
-    LoadConstantToReg(_arm_init, lr)
+    LOAD_ADDR(lr, arm_init)
     cpsid   if
 
     /* If MMU is initialized, go the quick way. */
@@ -79,6 +80,9 @@ EnterARM(_start)
      * Create a dumb mapping for right now. This mapping lies
      * at the top of kernel data.
      */
+    mov     r10, #0x80000000    /* xxx kaslr, remaining part is patching __nl_symbol_ptr */
+    str     r10, [r0, BOOT_ARGS_VIRTBASE]
+
     ldr     r4, [r0, BOOT_ARGS_TOP_OF_KERNEL]
     ldr     r10, [r0, BOOT_ARGS_VIRTBASE]
     ldr     r11, [r0, BOOT_ARGS_PHYSBASE]
@@ -132,15 +136,26 @@ map:
      * are running in VM mode.
      */
 
+     /*
+      * xxx KASLR: we need to jump to a trampoline.
+      * The address in r3 is relative, we convert it to a KVA and jump.
+      */
+    adr     r3, start_trampoline
+    sub     r3, r3, r11
+    add     r3, r3, r10
+    bx      r3
+start_trampoline:
+    nop     
+
 fix_boot_args_hack_for_bootkit:
     /* Fix up boot-args */
     sub     r0, r0, r11
     add     r0, r0, r10
 
     /* Goddamn section offset. */
-    LoadConstantToReg(_sectionOffset, r12)
-    mov     r11, #0
-    str     r11, [r12]
+    LOAD_ADDR(r12, sectionOffset)
+    mov     sp, #0
+    str     sp, [r12]
 
     /* Now, the vectors could be mapped low. Fix that. */
     mrc     p15, 0, r4, c1, c0, 0
@@ -174,7 +189,7 @@ mmu_initialized:
     mcr     p15, 0, r4, c7, c5, 0
 
     /* Set up initial sp. */
-    LoadConstantToReg(_intstack_top, sp)
+    LOAD_ADDR(sp, intstack_top)
 
     /* Boot to ARM init. */
     bx      lr
@@ -198,3 +213,7 @@ _intstack_top:
 _debstack:
 .space (8192), 0
 _debstack_top:
+
+LOAD_ADDR_GEN_DEF(arm_init)
+LOAD_ADDR_GEN_DEF(intstack_top)
+LOAD_ADDR_GEN_DEF(sectionOffset)
